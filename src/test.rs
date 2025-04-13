@@ -25,8 +25,9 @@ pub(crate) enum Response {
 async fn basic_rpc_transaction() {
     let (t1, t2) = TokioChannelTransport::new_pair(256);
 
-    let mut client = Client::<_, Request, Response>::new(t1);
-    let mut server = Server::<_, Request, Response>::new(t2);
+    let ack_timeout = Duration::from_millis(100);
+    let mut client = Client::<_, Request, Response>::new(t1, ack_timeout);
+    let mut server = Server::<_, Request, Response>::new(t2, ack_timeout);
 
     let done = Arc::new(AtomicBool::new(false));
 
@@ -71,8 +72,9 @@ async fn recover_from_out_of_sync() {
     // Send some garbage data, which could be half a message that was interrupted
     t2.transmit_raw(b"lol wtf?").await.unwrap();
 
-    let mut client = Client::<_, Request, Response>::new(t1);
-    let mut server = Server::<_, Request, Response>::new(t2);
+    let ack_timeout = Duration::from_millis(100);
+    let mut client = Client::<_, Request, Response>::new(t1, ack_timeout);
+    let mut server = Server::<_, Request, Response>::new(t2, ack_timeout);
 
     let done = Arc::new(AtomicBool::new(false));
 

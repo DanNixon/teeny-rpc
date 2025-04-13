@@ -44,7 +44,8 @@ async fn main() {
     match &cli.command {
         Commands::Client => {
             info!("Running client");
-            let mut client = Client::<_, Request, Response>::new(transport);
+            let mut client =
+                Client::<_, Request, Response>::new(transport, Duration::from_millis(100));
 
             let mut i = 0;
             loop {
@@ -64,7 +65,8 @@ async fn main() {
         }
         Commands::Server => {
             info!("Running server");
-            let mut server = Server::<_, Request, Response>::new(transport);
+            let mut server =
+                Server::<_, Request, Response>::new(transport, Duration::from_millis(100));
 
             loop {
                 match server.wait_for_request(Duration::from_secs(5)).await {

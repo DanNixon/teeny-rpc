@@ -11,6 +11,7 @@ pub struct Client<
     T: Transport<RpcMessage<REQ, RESP>>,
 {
     transport: T,
+    ack_timeout: Duration,
     seq: u32,
     _request: PhantomData<REQ>,
     _response: PhantomData<RESP>,
@@ -26,9 +27,10 @@ impl<
 where
     T: Transport<RpcMessage<REQ, RESP>>,
 {
-    pub fn new(transport: T) -> Self {
+    pub fn new(transport: T, ack_timeout: Duration) -> Self {
         Self {
             transport,
+            ack_timeout,
             seq: 0,
             _request: PhantomData,
             _response: PhantomData,
@@ -53,7 +55,7 @@ where
         self.transport.transmit_message(request.clone()).await?;
 
         // Receive the request acknowledgement
-        match self.transport.receive_message(crate::ACK_TIMEOUT).await {
+        match self.transport.receive_message(self.ack_timeout).await {
             Ok(ack) => {
                 if ack.kind != RpcMessageKind::RequestAck {
                     return Err(crate::Error::IncorrectMessageType);
@@ -110,15 +112,17 @@ mod test {
         client::Client,
         test::{Request, Response},
         transport::{tokio_channels::TokioChannelTransport, Transport},
-        RpcMessage, RpcMessageKind, ACK_TIMEOUT,
+        RpcMessage, RpcMessageKind,
     };
     use core::time::Duration;
+
+    const ACK_TIMEOUT: Duration = Duration::from_millis(100);
 
     #[tokio::test]
     async fn basic() {
         let (t1, mut t2) = TokioChannelTransport::new_pair(256);
 
-        let mut client = Client::<_, Request, Response>::new(t1);
+        let mut client = Client::<_, Request, Response>::new(t1, ACK_TIMEOUT);
 
         let run_server = async move {
             let msg = t2.receive_message(Duration::from_millis(20)).await.unwrap();
@@ -160,7 +164,7 @@ mod test {
     async fn no_ack() {
         let (t1, mut t2) = TokioChannelTransport::new_pair(256);
 
-        let mut client = Client::<_, Request, Response>::new(t1);
+        let mut client = Client::<_, Request, Response>::new(t1, ACK_TIMEOUT);
 
         let run_server = async move {
             let expected_request = RpcMessage {
@@ -198,7 +202,7 @@ mod test {
     async fn no_response() {
         let (t1, mut t2) = TokioChannelTransport::new_pair(256);
 
-        let mut client = Client::<_, Request, Response>::new(t1);
+        let mut client = Client::<_, Request, Response>::new(t1, ACK_TIMEOUT);
 
         let run_server = async move {
             assert_eq!(
@@ -242,7 +246,7 @@ mod test {
     async fn recover_after_no_ack() {
         let (t1, mut t2) = TokioChannelTransport::new_pair(256);
 
-        let mut client = Client::<_, Request, Response>::new(t1);
+        let mut client = Client::<_, Request, Response>::new(t1, ACK_TIMEOUT);
 
         let run_server = async move {
             // No ack
@@ -323,7 +327,7 @@ mod test {
     async fn recover_after_no_response() {
         let (t1, mut t2) = TokioChannelTransport::new_pair(256);
 
-        let mut client = Client::<_, Request, Response>::new(t1);
+        let mut client = Client::<_, Request, Response>::new(t1, ACK_TIMEOUT);
 
         let run_server = async move {
             // No response

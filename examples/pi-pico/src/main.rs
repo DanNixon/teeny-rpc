@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+use core::time::Duration;
 use defmt::warn;
 use defmt_rtt as _;
 use embassy_executor::Spawner;
@@ -44,13 +45,10 @@ async fn main(_spawner: Spawner) {
     let uart = BufferedUart::new(p.UART0, Irqs, p.PIN_0, p.PIN_1, tx_buf, rx_buf, config);
 
     let transport = EioTransport::<_, 512>::new(uart);
-    let mut server = Server::<_, Request, Response>::new(transport);
+    let mut server = Server::<_, Request, Response>::new(transport, Duration::from_millis(100));
 
     loop {
-        match server
-            .wait_for_request(core::time::Duration::from_secs(5))
-            .await
-        {
+        match server.wait_for_request(Duration::from_secs(5)).await {
             Ok(request) => {
                 let response = match request {
                     Request::Ping(i) => Response::Ping(i),

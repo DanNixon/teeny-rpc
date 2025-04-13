@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "no-std", no_std)]
 
-use core::time::Duration;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "no-std")]
@@ -61,5 +60,3 @@ pub enum Error {
     #[error("Deserialization error")]
     DeserializeError,
 }
-
-const ACK_TIMEOUT: Duration = Duration::from_millis(100);
