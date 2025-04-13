@@ -4,17 +4,19 @@ use embedded_io_async::{Read, Write};
 use heapless::Vec;
 use serde::{de::DeserializeOwned, Serialize};
 
-pub struct EioTransport<T: Read + Write> {
+pub struct EioTransport<T: Read + Write, const TX_BUF_LEN: usize> {
     port: T,
 }
 
-impl<T: Read + Write> EioTransport<T> {
+impl<T: Read + Write, const TX_BUF_LEN: usize> EioTransport<T, TX_BUF_LEN> {
     pub fn new(port: T) -> Self {
         Self { port }
     }
 }
 
-impl<T: Read + Write, M: Serialize + DeserializeOwned> super::Transport<M> for EioTransport<T> {
+impl<T: Read + Write, M: Serialize + DeserializeOwned, const TX_BUF_LEN: usize> super::Transport<M>
+    for EioTransport<T, TX_BUF_LEN>
+{
     async fn flush(&mut self, timeout: Duration) -> Result<usize, crate::Error> {
         let mut count: usize = 0;
 
@@ -92,7 +94,7 @@ impl<T: Read + Write, M: Serialize + DeserializeOwned> super::Transport<M> for E
     }
 
     async fn transmit_message(&mut self, msg: M) -> Result<(), crate::Error> {
-        let mut buffer = [0u8; 512];
+        let mut buffer = [0u8; TX_BUF_LEN];
 
         let buffer =
             postcard::to_slice_cobs(&msg, &mut buffer).map_err(|_| crate::Error::SerializeError)?;

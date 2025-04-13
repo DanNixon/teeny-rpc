@@ -43,7 +43,7 @@ async fn main(_spawner: Spawner) {
 
     let uart = BufferedUart::new(p.UART0, Irqs, p.PIN_0, p.PIN_1, tx_buf, rx_buf, config);
 
-    let transport = EioTransport::new(uart);
+    let transport = EioTransport::<_, 512>::new(uart);
     let mut server = Server::<_, Request, Response>::new(transport);
 
     loop {
