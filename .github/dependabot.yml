@@ -2,6 +2,33 @@ version: 2
 
 updates:
   - package-ecosystem: github-actions
-    directory: "/"
+    directory: "."
     schedule:
-      interval: "weekly"
+      interval: "monthly"
+
+  - package-ecosystem: cargo
+    directory: "."
+    schedule:
+      interval: "monthly"
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: cargo
+    directory: "./examples/pc"
+    schedule:
+      interval: "monthly"
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: cargo
+    directory: "./examples/pi-pico"
+    schedule:
+      interval: "monthly"
+    groups:
+      cargo-dependencies:
+        patterns:
+          - "*"
