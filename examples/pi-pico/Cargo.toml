@@ -11,9 +11,9 @@ embassy-rp = { version = "0.4.0", features = ["rp2040", "defmt", "unstable-pac",
 
 embassy-executor = { version = "0.7.0", features = ["task-arena-size-98304", "arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
 
-defmt = "0.3.8"
-defmt-rtt = "0.4.1"
-panic-probe = { version = "0.3.2", features = ["print-defmt"] }
+defmt = "1.0.1"
+defmt-rtt = "1.0.0"
+panic-probe = { version = "1.0.0", features = ["print-defmt"] }
 
 portable-atomic = { version = "1.9.0", features = ["critical-section"] }
 
