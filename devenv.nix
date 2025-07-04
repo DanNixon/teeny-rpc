@@ -9,6 +9,9 @@
     # Rust toolchain
     rustup
 
+    # Release tools
+    release-plz
+
     # Embedded example
     probe-rs
 
