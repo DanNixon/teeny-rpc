@@ -1,9 +1,13 @@
 [package]
 name = "teeny-rpc"
 version = "0.1.0"
-authors = ["Dan Nixon <dan@dan-nixon.com>"]
-edition = "2021"
 license = "MIT"
+edition = "2021"
+homepage = "https://github.com/DanNixon/teeny-rpc"
+repository = "https://github.com/DanNixon/teeny-rpc"
+readme = "README.md"
+description = "An extremely minimal Rust RPC library that supports both std and no_std clients and servers."
+authors = ["Dan Nixon <dan@dan-nixon.com>"]
 
 [features]
 default = ["std"]
