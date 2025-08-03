@@ -42,7 +42,7 @@ async fn main(_spawner: Spawner) {
     let mut config = Config::default();
     config.baudrate = 115_200;
 
-    let uart = BufferedUart::new(p.UART0, Irqs, p.PIN_0, p.PIN_1, tx_buf, rx_buf, config);
+    let uart = BufferedUart::new(p.UART0, p.PIN_0, p.PIN_1, Irqs, tx_buf, rx_buf, config);
 
     let transport = EioTransport::<_, 512>::new(uart);
     let mut server = Server::<_, Request, Response>::new(transport, Duration::from_millis(100));

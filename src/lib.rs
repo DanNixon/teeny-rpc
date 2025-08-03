@@ -1,4 +1,6 @@
 #![cfg_attr(feature = "no-std", no_std)]
+// Required as defmt cannot use inlined format args
+#![allow(clippy::uninlined_format_args)]
 
 use serde::{Deserialize, Serialize};
 
