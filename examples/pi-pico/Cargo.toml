@@ -7,9 +7,9 @@ license = "MIT"
 
 [dependencies]
 cortex-m-rt = "0.7.3"
-embassy-rp = { version = "0.6.0", features = ["rp2040", "defmt", "unstable-pac", "time-driver", "critical-section-impl"] }
+embassy-rp = { version = "0.8.0", features = ["rp2040", "defmt", "unstable-pac", "time-driver", "critical-section-impl"] }
 
-embassy-executor = { version = "0.8.0", features = ["arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
+embassy-executor = { version = "0.9.1", features = ["arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
 
 defmt = "1.0.1"
 defmt-rtt = "1.0.0"
