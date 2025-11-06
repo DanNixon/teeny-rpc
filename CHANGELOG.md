@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1](https://github.com/DanNixon/teeny-rpc/compare/v0.1.0...v0.1.1) - 2025-11-06
+
+### Added
+
+- add the ability for a server to ignore a client request
+
+### Other
+
+- *(deps)* update Pi Pico example dependencies
+- *(deps)* bump the cargo-dependencies group
+- *(deps)* bump actions/checkout from 4 to 5
+- Update devenv
+- Update cargo dependencies
+- add readme badges
+
 ## [0.1.0](https://github.com/dannixon/teeny-rpc/releases/tag/v0.1.0) - 2025-07-04
 
 ### Other
