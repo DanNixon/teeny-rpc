@@ -107,6 +107,16 @@ where
             Err(crate::Error::NoRequestInProgress)
         }
     }
+
+    pub fn ignore_active_request(&mut self) -> Result<(), crate::Error> {
+        match self.active_rpc.take() {
+            Some(seq) => {
+                debug!("Ignoring request {}", seq);
+                Ok(())
+            }
+            None => Err(crate::Error::NoRequestInProgress),
+        }
+    }
 }
 
 #[cfg(test)]
