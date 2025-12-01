@@ -13,7 +13,7 @@
     release-plz
 
     # Embedded example
-    probe-rs
+    probe-rs-tools
 
     # Linux example
     pkg-config
