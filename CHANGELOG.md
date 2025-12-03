@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2](https://github.com/DanNixon/teeny-rpc/compare/v0.1.1...v0.1.2) - 2025-12-03
+
+### Fixed
+
+- fixed markdown lint warnings
+
+### Other
+
+- update cargo dependencies
+- *(deps)* update embassy-rp requirement
+- update devenv inputs
+- *(ci)* disable persist-credentials for release jobs
+- *(deps)* bump actions/checkout from 5 to 6
+
 ## [0.1.1](https://github.com/DanNixon/teeny-rpc/compare/v0.1.0...v0.1.1) - 2025-11-06
 
 ### Added
