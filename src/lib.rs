@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "no-std")]
-use defmt::{debug, error, trace, warn};
+use defmt::{debug, trace, warn};
 #[cfg(feature = "std")]
 use log::{debug, error, trace, warn};
 
