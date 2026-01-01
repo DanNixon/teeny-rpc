@@ -4,12 +4,12 @@ updates:
   - package-ecosystem: github-actions
     directory: "."
     schedule:
-      interval: "monthly"
+      interval: semiannually
 
   - package-ecosystem: cargo
     directory: "."
     schedule:
-      interval: "monthly"
+      interval: semiannually
     groups:
       cargo-dependencies:
         patterns:
@@ -18,7 +18,7 @@ updates:
   - package-ecosystem: cargo
     directory: "./examples/pc"
     schedule:
-      interval: "monthly"
+      interval: semiannually
     groups:
       cargo-dependencies:
         patterns:
@@ -27,7 +27,7 @@ updates:
   - package-ecosystem: cargo
     directory: "./examples/pi-pico"
     schedule:
-      interval: "monthly"
+      interval: semiannually
     groups:
       cargo-dependencies:
         patterns:
