@@ -7,12 +7,13 @@ pub struct Server<
     T,
     REQ: Serialize + Deserialize<'de> + PartialEq,
     RESP: Serialize + Deserialize<'de> + PartialEq,
+    const CHANNEL_ID: u8,
 > where
     T: Transport<RpcMessage<REQ, RESP>>,
 {
     transport: T,
     ack_timeout: Duration,
-    active_rpc: Option<u32>,
+    active_rpc: Option<u16>,
     _request: PhantomData<REQ>,
     _response: PhantomData<RESP>,
     _de_lifetime: PhantomData<&'de ()>,
@@ -23,7 +24,8 @@ impl<
         T,
         REQ: Serialize + Deserialize<'de> + PartialEq + Clone,
         RESP: Serialize + Deserialize<'de> + PartialEq + Clone,
-    > Server<'de, T, REQ, RESP>
+        const CHANNEL_ID: u8,
+    > Server<'de, T, REQ, RESP, CHANNEL_ID>
 where
     T: Transport<RpcMessage<REQ, RESP>>,
 {
@@ -45,12 +47,20 @@ where
 
         let request = self.transport.receive_message(timeout).await?;
 
+        if request.channel_id != CHANNEL_ID {
+            return Err(crate::Error::IncorrectChannel {
+                expected: CHANNEL_ID,
+                actual: request.channel_id,
+            });
+        }
+
         if let RpcMessageKind::Request { payload } = request.kind {
             debug!("Received request {}", request.seq);
 
             trace!("Sending ack for request {}", request.seq);
             self.transport
                 .transmit_message(RpcMessage {
+                    channel_id: request.channel_id,
                     seq: request.seq,
                     kind: RpcMessageKind::RequestAck,
                 })
@@ -68,6 +78,7 @@ where
         // send_response fails anyway)
         if let Some(seq) = self.active_rpc.take() {
             let response = RpcMessage {
+                channel_id: CHANNEL_ID,
                 seq,
                 kind: RpcMessageKind::Response { payload: response },
             };
@@ -79,6 +90,12 @@ where
             // Receive the response acknowledgement
             match self.transport.receive_message(self.ack_timeout).await {
                 Ok(ack) => {
+                    if ack.channel_id != CHANNEL_ID {
+                        return Err(crate::Error::IncorrectChannel {
+                            expected: CHANNEL_ID,
+                            actual: ack.channel_id,
+                        });
+                    }
                     if ack.kind != RpcMessageKind::ResponseAck {
                         return Err(crate::Error::IncorrectMessageType);
                     }
@@ -135,7 +152,7 @@ mod test {
     async fn basic() {
         let (mut t1, t2) = TokioChannelTransport::new_pair(256);
 
-        let mut server = Server::<_, Request, Response>::new(t2, ACK_TIMEOUT);
+        let mut server = Server::<_, Request, Response, 0x42>::new(t2, ACK_TIMEOUT);
 
         let run_server = {
             async move {
@@ -163,6 +180,7 @@ mod test {
 
         let run_client = async move {
             t1.transmit_message(RpcMessage {
+                channel_id: 0x42,
                 seq: 2,
                 kind: RpcMessageKind::Request {
                     payload: Request::Ping(69),
@@ -185,6 +203,7 @@ mod test {
             );
 
             t1.transmit_message(RpcMessage {
+                channel_id: 0x42,
                 seq: 2,
                 kind: RpcMessageKind::ResponseAck,
             })
@@ -199,7 +218,7 @@ mod test {
     async fn no_ack() {
         let (mut t1, t2) = TokioChannelTransport::new_pair(256);
 
-        let mut server = Server::<_, Request, Response>::new(t2, ACK_TIMEOUT);
+        let mut server = Server::<_, Request, Response, 0x42>::new(t2, ACK_TIMEOUT);
 
         let run_server = {
             async move {
@@ -227,6 +246,7 @@ mod test {
 
         let run_client = async move {
             t1.transmit_message(RpcMessage {
+                channel_id: 0x42,
                 seq: 2,
                 kind: RpcMessageKind::Request {
                     payload: Request::Ping(69),
@@ -238,6 +258,7 @@ mod test {
             assert_eq!(
                 t1.receive_message(Duration::ZERO).await.unwrap(),
                 RpcMessage {
+                    channel_id: 0x42,
                     seq: 2,
                     kind: RpcMessageKind::RequestAck,
                 }
@@ -246,6 +267,7 @@ mod test {
             assert_eq!(
                 t1.receive_message(Duration::from_millis(20)).await.unwrap(),
                 RpcMessage {
+                    channel_id: 0x42,
                     seq: 2,
                     kind: RpcMessageKind::Response {
                         payload: Response::Ping(69)
@@ -266,7 +288,7 @@ mod test {
     async fn recover_after_no_ack() {
         let (mut t1, t2) = TokioChannelTransport::new_pair(256);
 
-        let mut server = Server::<_, Request, Response>::new(t2, ACK_TIMEOUT);
+        let mut server = Server::<_, Request, Response, 0x42>::new(t2, ACK_TIMEOUT);
 
         let run_server = {
             async move {
@@ -293,6 +315,7 @@ mod test {
 
         let run_client = async move {
             t1.transmit_message(RpcMessage {
+                channel_id: 0x42,
                 seq: 2,
                 kind: RpcMessageKind::Request {
                     payload: Request::Ping(69),
@@ -304,6 +327,7 @@ mod test {
             assert_eq!(
                 t1.receive_message(Duration::ZERO).await.unwrap(),
                 RpcMessage {
+                    channel_id: 0x42,
                     seq: 2,
                     kind: RpcMessageKind::RequestAck,
                 }
@@ -312,6 +336,7 @@ mod test {
             assert_eq!(
                 t1.receive_message(Duration::from_millis(20)).await.unwrap(),
                 RpcMessage {
+                    channel_id: 0x42,
                     seq: 2,
                     kind: RpcMessageKind::Response {
                         payload: Response::Ping(69)
@@ -325,6 +350,7 @@ mod test {
             tokio::time::sleep(Duration::from_millis(20)).await;
 
             t1.transmit_message(RpcMessage {
+                channel_id: 0x42,
                 seq: 2,
                 kind: RpcMessageKind::Request {
                     payload: Request::Ping(69),
@@ -347,6 +373,7 @@ mod test {
             );
 
             t1.transmit_message(RpcMessage {
+                channel_id: 0x42,
                 seq: 2,
                 kind: RpcMessageKind::ResponseAck,
             })

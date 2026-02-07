@@ -19,7 +19,8 @@ mod test;
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "no-std", derive(defmt::Format))]
 pub struct RpcMessage<REQ, RESP> {
-    seq: u32,
+    channel_id: u8,
+    seq: u16,
     kind: RpcMessageKind<REQ, RESP>,
 }
 
@@ -44,8 +45,11 @@ pub enum Error {
     #[error("The incorrect RPC message type was received")]
     IncorrectMessageType,
 
+    #[error("Incorrect channel ID (expected {expected}, got {actual})")]
+    IncorrectChannel { expected: u8, actual: u8 },
+
     #[error("Incorrect sequence number (expected {expected}, got {actual})")]
-    IncorrectSequenceNumber { expected: u32, actual: u32 },
+    IncorrectSequenceNumber { expected: u16, actual: u16 },
 
     #[error("No acknowledgement was received")]
     NoAck,
