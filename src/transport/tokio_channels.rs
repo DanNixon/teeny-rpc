@@ -1,7 +1,7 @@
 use crate::{error, trace, warn};
 use core::{marker::PhantomData, time::Duration};
 use serde::{de::DeserializeOwned, Serialize};
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::broadcast::{channel, Receiver, Sender};
 
 pub struct TokioChannelTransport<M> {
     tx: Sender<u8>,
@@ -11,27 +11,46 @@ pub struct TokioChannelTransport<M> {
 
 impl<M> TokioChannelTransport<M> {
     pub fn new_pair(capacity: usize) -> (Self, Self) {
-        let (tx1, rx1) = channel::<u8>(capacity);
-        let (tx2, rx2) = channel::<u8>(capacity);
-        let transport_1 = Self {
-            tx: tx1,
-            rx: rx2,
-            _msg_type: PhantomData,
-        };
-        let transport_2 = Self {
-            tx: tx2,
-            rx: rx1,
-            _msg_type: PhantomData,
-        };
-        (transport_1, transport_2)
+        let (mut controllers, mut targets) = Self::new_multidrop(capacity, 1, 1);
+        (controllers.pop().unwrap(), targets.pop().unwrap())
     }
 
-    pub(crate) async fn transmit_raw(&mut self, data: &[u8]) -> Result<(), crate::Error> {
+    pub fn new_multidrop(
+        capacity: usize,
+        num_controllers: usize,
+        num_targets: usize,
+    ) -> (Vec<Self>, Vec<Self>) {
+        let (controller_out, _) = channel::<u8>(capacity);
+        let (target_out, _) = channel::<u8>(capacity);
+
+        let mut controllers = Vec::new();
+        for _ in 0..num_controllers {
+            let controller_in = target_out.subscribe();
+
+            controllers.push(Self {
+                tx: controller_out.clone(),
+                rx: controller_in,
+                _msg_type: PhantomData,
+            });
+        }
+
+        let mut targets = Vec::new();
+        for _ in 0..num_targets {
+            let target_in = controller_out.subscribe();
+
+            targets.push(Self {
+                tx: target_out.clone(),
+                rx: target_in,
+                _msg_type: PhantomData,
+            });
+        }
+
+        (controllers, targets)
+    }
+
+    pub(crate) fn transmit_raw(&mut self, data: &[u8]) -> Result<(), crate::Error> {
         for b in data {
-            self.tx
-                .send(*b)
-                .await
-                .map_err(|_| crate::Error::TransportError)?;
+            self.tx.send(*b).map_err(|_| crate::Error::TransportError)?;
         }
 
         Ok(())
@@ -44,11 +63,11 @@ impl<M: Serialize + DeserializeOwned> super::Transport<M> for TokioChannelTransp
 
         loop {
             match tokio::time::timeout(timeout, self.rx.recv()).await {
-                Ok(Some(_)) => {
+                Ok(Ok(_)) => {
                     count = count.saturating_add(1);
                 }
-                Ok(None) => {
-                    warn!("Channel closed");
+                Ok(Err(e)) => {
+                    warn!("Channel error: {e}");
                     return Err(crate::Error::TransportError);
                 }
                 Err(_) => {
@@ -67,7 +86,7 @@ impl<M: Serialize + DeserializeOwned> super::Transport<M> for TokioChannelTransp
 
         loop {
             match tokio::time::timeout(Duration::from_millis(10), self.rx.recv()).await {
-                Ok(Some(b)) => {
+                Ok(Ok(b)) => {
                     buffer.push(b);
 
                     if buffer.last() == Some(&0u8) {
@@ -88,8 +107,8 @@ impl<M: Serialize + DeserializeOwned> super::Transport<M> for TokioChannelTransp
                         }
                     }
                 }
-                Ok(None) => {
-                    warn!("Channel closed");
+                Ok(Err(e)) => {
+                    warn!("Channel error: {e}");
                     return Err(crate::Error::TransportError);
                 }
                 Err(_) => {
@@ -108,6 +127,6 @@ impl<M: Serialize + DeserializeOwned> super::Transport<M> for TokioChannelTransp
             crate::Error::SerializeError
         })?;
 
-        self.transmit_raw(&buffer).await
+        self.transmit_raw(&buffer)
     }
 }

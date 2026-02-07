@@ -45,7 +45,8 @@ async fn main(_spawner: Spawner) {
     let uart = BufferedUart::new(p.UART0, p.PIN_0, p.PIN_1, Irqs, tx_buf, rx_buf, config);
 
     let transport = EioTransport::<_, 512>::new(uart);
-    let mut server = Server::<_, Request, Response>::new(transport, Duration::from_millis(100));
+    let mut server =
+        Server::<_, Request, Response, 0x42>::new(transport, Duration::from_millis(100));
 
     loop {
         match server.wait_for_request(Duration::from_secs(5)).await {
