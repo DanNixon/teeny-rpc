@@ -6,7 +6,7 @@ use core::{
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-#[ctor::ctor]
+#[ctor::ctor(unsafe)]
 fn init_test_logging() {
     env_logger::init();
 }
