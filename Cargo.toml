@@ -7,7 +7,6 @@ homepage = "https://github.com/DanNixon/teeny-rpc"
 repository = "https://github.com/DanNixon/teeny-rpc"
 readme = "README.md"
 description = "An extremely minimal Rust RPC library that supports both std and no_std clients and servers."
-authors = ["Dan Nixon <dan@dan-nixon.com>"]
 
 [features]
 default = ["std"]
@@ -36,7 +35,7 @@ thiserror = { version = "2.0.12", default-features = false }
 # no-std dependencies
 defmt = { version = "1.0.1", optional = true }
 embassy-time = { version = "0.5.0", optional = true }
-embedded-io-async = { version = "0.6.1", features = ["defmt-03"], optional = true }
+embedded-io-async = { version = "0.7.0", features = ["defmt"], optional = true }
 heapless = { version = "0.9.2", features = ["defmt", "serde"], optional = true }
 
 # std dependencies
@@ -45,7 +44,7 @@ tokio = { version = "1.44.1", features = ["sync", "rt", "macros", "time", "io-ut
 tokio-serial = { version = "5.4.5", optional = true }
 
 [dev-dependencies]
-ctor = "0.6.2"
+ctor = "1.0.8"
 env_logger = "0.11.7"
 
 [lints.rust]
