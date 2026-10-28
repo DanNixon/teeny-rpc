@@ -6,7 +6,7 @@ edition = "2021"
 homepage = "https://github.com/DanNixon/teeny-rpc"
 repository = "https://github.com/DanNixon/teeny-rpc"
 readme = "README.md"
-description = "An extremely minimal Rust RPC library that supports both std and no_std clients and servers."
+description = "A minimal Rust RPC library that supports both std and no_std clients and servers."
 
 [features]
 default = ["std"]
