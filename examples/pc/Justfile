@@ -1,0 +1,16 @@
+default: check
+
+build:
+    cargo build --release
+
+run:
+    cargo run --release
+
+fmt:
+    cargo fmt
+
+clippy:
+    cargo clippy --release -- -D warnings
+
+check: clippy
+    cargo fmt --check
