@@ -57,7 +57,14 @@ where
 
         // Receive the request acknowledgement
         match wire::receive_request_ack(&mut self.transport, self.ack_timeout).await {
-            Ok((_, seq)) => {
+            Ok((channel_id, seq)) => {
+                if channel_id != CHANNEL_ID {
+                    return Err(Error::IncorrectChannel {
+                        expected: CHANNEL_ID,
+                        actual: channel_id,
+                    });
+                }
+
                 if seq != self.seq {
                     return Err(Error::IncorrectSequenceNumber {
                         expected: self.seq,
@@ -83,8 +90,16 @@ where
 
         // Receive the response
         trace!("Waiting for response for request {}", self.seq);
-        let (_, seq, payload) =
+        let (channel_id, seq, payload) =
             wire::receive_response::<_, RESP>(&mut self.transport, timeout).await?;
+
+        if channel_id != CHANNEL_ID {
+            return Err(Error::IncorrectChannel {
+                expected: CHANNEL_ID,
+                actual: channel_id,
+            });
+        }
+
         if seq != self.seq {
             return Err(Error::IncorrectSequenceNumber {
                 expected: self.seq,
@@ -213,6 +228,84 @@ mod test {
                 .call(Request::Ping(42), Duration::from_millis(500))
                 .await;
             assert_eq!(result, Err(Error::Timeout));
+        };
+
+        tokio::join!(run_server, run_client);
+    }
+
+    #[tokio::test]
+    async fn wrong_channel_ack() {
+        let (t1, mut t2) = TokioChannelTransport::new_pair(256);
+
+        let mut client = Client::<_, Request, Response, 0x42, BUF_LEN>::new(t1, ACK_TIMEOUT);
+
+        let run_server = async move {
+            assert_eq!(
+                receive_request(&mut t2, Duration::from_millis(20)).await,
+                Ok((0x42, 1, Request::Ping(42)))
+            );
+
+            transmit_request_ack(&mut t2, 0x43, 1).await.unwrap();
+
+            // Exit when client goes away
+            assert_eq!(
+                receive_request(&mut t2, Duration::from_secs(30)).await,
+                Err(Error::TransportError)
+            );
+        };
+
+        let run_client = async move {
+            let result = client
+                .call(Request::Ping(42), Duration::from_millis(500))
+                .await;
+            assert_eq!(
+                result,
+                Err(Error::IncorrectChannel {
+                    expected: 0x42,
+                    actual: 0x43
+                })
+            );
+        };
+
+        tokio::join!(run_server, run_client);
+    }
+
+    #[tokio::test]
+    async fn wrong_channel_response() {
+        let (t1, mut t2) = TokioChannelTransport::new_pair(256);
+
+        let mut client = Client::<_, Request, Response, 0x42, BUF_LEN>::new(t1, ACK_TIMEOUT);
+
+        let run_server = async move {
+            assert_eq!(
+                receive_request(&mut t2, Duration::from_millis(20)).await,
+                Ok((0x42, 1, Request::Ping(42)))
+            );
+
+            transmit_request_ack(&mut t2, 0x42, 1).await.unwrap();
+
+            transmit_response(&mut t2, 0x43, 1, &Response::Ping(42))
+                .await
+                .unwrap();
+
+            // Exit when client goes away
+            assert_eq!(
+                receive_request(&mut t2, Duration::from_secs(30)).await,
+                Err(Error::TransportError)
+            );
+        };
+
+        let run_client = async move {
+            let result = client
+                .call(Request::Ping(42), Duration::from_millis(500))
+                .await;
+            assert_eq!(
+                result,
+                Err(Error::IncorrectChannel {
+                    expected: 0x42,
+                    actual: 0x43
+                })
+            );
         };
 
         tokio::join!(run_server, run_client);
