@@ -9,11 +9,12 @@
   in {
     devShells.${system}.default = pkgs.mkShell {
       buildInputs = with pkgs; [
+        # General build tools
+        just
+
         # Code formatting tools
-        treefmt
         alejandra
-        mdl
-        rustfmt
+        typos
 
         # Rust toolchain
         rustup
