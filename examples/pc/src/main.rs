@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use teeny_rpc::{client::Client, server::Server, transport::serialport::SerialTransport};
+use teeny_rpc::{transport::SerialTransport, Client, Server};
 
 #[derive(Parser)]
 #[command()]
@@ -44,8 +44,10 @@ async fn main() {
     match &cli.command {
         Commands::Client => {
             info!("Running client");
-            let mut client =
-                Client::<_, Request, Response, 0x42>::new(transport, Duration::from_millis(100));
+            let mut client = Client::<_, Request, Response, 0x42, 512>::new(
+                transport,
+                Duration::from_millis(100),
+            );
 
             let mut i = 0;
             loop {
@@ -65,8 +67,10 @@ async fn main() {
         }
         Commands::Server => {
             info!("Running server");
-            let mut server =
-                Server::<_, Request, Response, 0x42>::new(transport, Duration::from_millis(100));
+            let mut server = Server::<_, Request, Response, 0x42, 512>::new(
+                transport,
+                Duration::from_millis(100),
+            );
 
             loop {
                 match server.wait_for_request(Duration::from_secs(5)).await {

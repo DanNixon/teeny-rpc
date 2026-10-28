@@ -1,22 +1,24 @@
+use crate::Error;
 use core::time::Duration;
 use defmt::{trace, warn};
 use embedded_io_async::{Read, Write};
 use heapless::Vec;
-use serde::{de::DeserializeOwned, Serialize};
 
-pub struct EioTransport<T: Read + Write, const TX_BUF_LEN: usize> {
+pub struct EioTransport<T: Read + Write, const BUF_LEN: usize> {
     port: T,
+    rx_buf: Vec<u8, BUF_LEN>,
 }
 
-impl<T: Read + Write, const TX_BUF_LEN: usize> EioTransport<T, TX_BUF_LEN> {
+impl<T: Read + Write, const BUF_LEN: usize> EioTransport<T, BUF_LEN> {
     pub fn new(port: T) -> Self {
-        Self { port }
+        Self {
+            port,
+            rx_buf: Vec::new(),
+        }
     }
 }
 
-impl<T: Read + Write, M: Serialize + DeserializeOwned, const TX_BUF_LEN: usize> super::Transport<M>
-    for EioTransport<T, TX_BUF_LEN>
-{
+impl<T: Read + Write, const BUF_LEN: usize> super::Transport for EioTransport<T, BUF_LEN> {
     async fn flush(&mut self, timeout: Duration) -> Result<usize, crate::Error> {
         let mut count: usize = 0;
 
@@ -34,7 +36,7 @@ impl<T: Read + Write, M: Serialize + DeserializeOwned, const TX_BUF_LEN: usize> 
                 }
                 Ok(Err(_)) => {
                     warn!("UART read fail");
-                    return Err(crate::Error::TransportError);
+                    return Err(Error::TransportError);
                 }
                 Err(_) => {
                     break;
@@ -45,8 +47,8 @@ impl<T: Read + Write, M: Serialize + DeserializeOwned, const TX_BUF_LEN: usize> 
         Ok(count)
     }
 
-    async fn receive_message(&mut self, timeout: Duration) -> Result<M, crate::Error> {
-        let mut buffer: Vec<u8, 512> = Vec::new();
+    async fn receive_frame(&mut self, timeout: Duration) -> Result<&mut [u8], crate::Error> {
+        self.rx_buf.clear();
 
         let start = embassy_time::Instant::now();
 
@@ -60,24 +62,15 @@ impl<T: Read + Write, M: Serialize + DeserializeOwned, const TX_BUF_LEN: usize> 
             .await
             {
                 Ok(Ok(_)) => {
-                    buffer.extend(b);
+                    if self.rx_buf.extend_from_slice(&b).is_err() {
+                        warn!("Failed to buffer frame with {} bytes", self.rx_buf.len(),);
+                        self.rx_buf.clear();
+                        return Err(Error::TransportError);
+                    }
 
-                    if buffer.last() == Some(&0u8) {
-                        match postcard::from_bytes_cobs::<M>(buffer.as_mut_slice()) {
-                            Ok(msg) => {
-                                trace!("Received message");
-                                buffer.clear();
-                                return Ok(msg);
-                            }
-                            Err(_) => {
-                                warn!(
-                                    "Failed to decode message with {} bytes in buffer",
-                                    buffer.len(),
-                                );
-                                buffer.clear();
-                                return Err(crate::Error::TransportError);
-                            }
-                        }
+                    if b[0] == 0 {
+                        trace!("Received frame");
+                        return Ok(&mut self.rx_buf);
                     }
                 }
                 Ok(Err(_)) => {
@@ -86,22 +79,17 @@ impl<T: Read + Write, M: Serialize + DeserializeOwned, const TX_BUF_LEN: usize> 
                 Err(_) => {
                     let elapsed = embassy_time::Instant::now() - start;
                     if elapsed.as_micros() as u128 >= timeout.as_micros() {
-                        return Err(crate::Error::Timeout);
+                        return Err(Error::Timeout);
                     }
                 }
             }
         }
     }
 
-    async fn transmit_message(&mut self, msg: M) -> Result<(), crate::Error> {
-        let mut buffer = [0u8; TX_BUF_LEN];
-
-        let buffer =
-            postcard::to_slice_cobs(&msg, &mut buffer).map_err(|_| crate::Error::SerializeError)?;
-
+    async fn transmit_frame(&mut self, frame: &[u8]) -> Result<(), crate::Error> {
         self.port
-            .write_all(buffer)
+            .write_all(frame)
             .await
-            .map_err(|_| crate::Error::TransportError)
+            .map_err(|_| Error::TransportError)
     }
 }
