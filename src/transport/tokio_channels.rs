@@ -1,4 +1,4 @@
-use crate::{trace, warn, Error};
+use crate::Error;
 use core::time::Duration;
 use tokio::sync::broadcast::error::RecvError;
 use tokio::sync::broadcast::{channel, Receiver, Sender};
@@ -70,7 +70,7 @@ impl super::Transport for TokioChannelTransport {
                     warn!("Channel lagged, {} frames lost", n);
                 }
                 Ok(Err(e)) => {
-                    warn!("Channel error: {e}");
+                    warn!("Channel error: {}", e);
                     return Err(Error::TransportError);
                 }
                 Err(_) => {
@@ -99,7 +99,7 @@ impl super::Transport for TokioChannelTransport {
                     // being waited for may still arrive
                 }
                 Ok(Err(e)) => {
-                    warn!("Channel error: {e}");
+                    warn!("Channel error: {}", e);
                     return Err(Error::TransportError);
                 }
                 Err(_) => return Err(Error::Timeout),

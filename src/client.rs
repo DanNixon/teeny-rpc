@@ -1,4 +1,4 @@
-use crate::{debug, trace, transport::Transport, warn, wire, Error};
+use crate::{transport::Transport, wire, Error};
 use core::{marker::PhantomData, time::Duration};
 use serde::{de::DeserializeOwned, Serialize};
 

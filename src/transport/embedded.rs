@@ -1,6 +1,5 @@
 use crate::Error;
 use core::time::Duration;
-use defmt::{trace, warn};
 use embedded_io_async::{Read, Write};
 use heapless::Vec;
 

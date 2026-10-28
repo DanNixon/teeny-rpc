@@ -32,8 +32,10 @@ test:
     cargo test
 
 clippy:
-    cargo clippy -- -D warnings
+    cargo clippy --no-default-features --features no-std --features defmt -- -D warnings
+    cargo clippy --no-default-features --features std --features log -- -D warnings
     cargo clippy --no-default-features --features no-std -- -D warnings
+    cargo clippy --no-default-features --features std -- -D warnings
 
 fmt:
     alejandra -q .

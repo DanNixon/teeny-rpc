@@ -1,11 +1,7 @@
 #![cfg_attr(feature = "no-std", no_std)]
-// Required as defmt cannot use inlined format args
-#![allow(clippy::uninlined_format_args)]
+#![allow(clippy::uninlined_format_args)] // Required as defmt cannot use inlined format args
 
-#[cfg(feature = "no-std")]
-pub(crate) use defmt::{debug, trace, warn};
-#[cfg(feature = "std")]
-pub(crate) use log::{debug, trace, warn};
+mod fmt;
 
 mod client;
 mod error;

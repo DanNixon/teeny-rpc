@@ -1,6 +1,5 @@
 use crate::Error;
 use core::time::Duration;
-use log::error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, ReadHalf, WriteHalf};
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
 
@@ -15,7 +14,7 @@ impl SerialTransport {
         let port = tokio_serial::new(port, baud)
             .open_native_async()
             .map_err(|e| {
-                error!("Failed to open serial port {port} with error {e}");
+                error!("Failed to open serial port {} with error {}", port, e);
                 Error::TransportError
             })?;
 
@@ -61,7 +60,7 @@ impl super::Transport for SerialTransport {
             }
             Ok(Ok(_)) => Ok(&mut self.rx_buf),
             Ok(Err(e)) => {
-                error!("Serial error: {e}");
+                error!("Serial error: {}", e);
                 Err(Error::TransportError)
             }
             Err(_) => Err(Error::Timeout),
@@ -70,7 +69,7 @@ impl super::Transport for SerialTransport {
 
     async fn transmit_frame(&mut self, frame: &[u8]) -> Result<(), crate::Error> {
         self.writer.write_all(frame).await.map_err(|e| {
-            error!("Failed to write to serial port with error {e}");
+            error!("Failed to write to serial port with error {}", e);
             Error::TransportError
         })
     }

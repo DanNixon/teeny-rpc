@@ -1,5 +1,5 @@
 #[derive(thiserror::Error, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "no-std", derive(defmt::Format))]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum Error {
     #[error("An RPC request is already being processed")]
     RequestAlreadyInProgress,
