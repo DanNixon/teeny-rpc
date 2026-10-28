@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0](https://github.com/DanNixon/teeny-rpc/compare/v0.2.0...v0.3.0) - 2026-10-28
+
+### Fixed
+
+- address unreliable test
+- client checks channel number on response receive
+
+### Other
+
+- vastly improve readme
+- [**breaking**] refactor client, server and transports
+- remove old Treeformat config
+- update buildsystem and CI
+- update flake inputs
+
 ## [0.2.0](https://github.com/DanNixon/teeny-rpc/compare/v0.1.2...v0.2.0) - 2026-07-11
 
 ### Added
