@@ -123,7 +123,7 @@ mod test {
         client::Client,
         test::{
             receive_request, receive_response_ack, transmit_request_ack, transmit_response,
-            Request, Response, BUF_LEN,
+            Request, Response, BUF_LEN, TEST_TIMEOUT,
         },
         transport::TokioChannelTransport,
         Error,
@@ -139,9 +139,7 @@ mod test {
         let mut client = Client::<_, Request, Response, 0x42, BUF_LEN>::new(t1, ACK_TIMEOUT);
 
         let run_server = async move {
-            let (channel_id, seq, request) = receive_request(&mut t2, Duration::from_millis(20))
-                .await
-                .unwrap();
+            let (channel_id, seq, request) = receive_request(&mut t2, TEST_TIMEOUT).await.unwrap();
             assert_eq!(channel_id, 0x42);
             assert_eq!(seq, 1);
             assert_eq!(request, Request::Ping(42));
@@ -152,7 +150,7 @@ mod test {
                 .await
                 .unwrap();
 
-            let (channel_id, seq) = receive_response_ack(&mut t2, Duration::ZERO).await.unwrap();
+            let (channel_id, seq) = receive_response_ack(&mut t2, TEST_TIMEOUT).await.unwrap();
             assert_eq!(channel_id, 0x42);
             assert_eq!(seq, 1);
         };
@@ -176,7 +174,7 @@ mod test {
 
         let run_server = async move {
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(20)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 1, Request::Ping(42)))
             );
 
@@ -207,7 +205,7 @@ mod test {
 
         let run_server = async move {
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(10)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 1, Request::Ping(42)))
             );
 
@@ -241,7 +239,7 @@ mod test {
 
         let run_server = async move {
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(20)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 1, Request::Ping(42)))
             );
 
@@ -278,7 +276,7 @@ mod test {
 
         let run_server = async move {
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(20)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 1, Request::Ping(42)))
             );
 
@@ -320,7 +318,7 @@ mod test {
         let run_server = async move {
             // No ack
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(20)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 1, Request::Ping(42)))
             );
 
@@ -328,7 +326,7 @@ mod test {
 
             // Normal
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(20)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 2, Request::Ping(42)))
             );
 
@@ -339,7 +337,7 @@ mod test {
                 .unwrap();
 
             assert_eq!(
-                receive_response_ack(&mut t2, Duration::ZERO).await,
+                receive_response_ack(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 2))
             );
 
@@ -376,7 +374,7 @@ mod test {
         let run_server = async move {
             // No response
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(20)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 1, Request::Ping(42)))
             );
 
@@ -387,7 +385,7 @@ mod test {
 
             // Normal
             assert_eq!(
-                receive_request(&mut t2, Duration::from_millis(20)).await,
+                receive_request(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 2, Request::Ping(42)))
             );
 
@@ -398,7 +396,7 @@ mod test {
                 .unwrap();
 
             assert_eq!(
-                receive_response_ack(&mut t2, Duration::ZERO).await,
+                receive_response_ack(&mut t2, TEST_TIMEOUT).await,
                 Ok((0x42, 2))
             );
 

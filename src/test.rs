@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 pub(crate) const BUF_LEN: usize = 512;
+pub(crate) const TEST_TIMEOUT: Duration = Duration::from_secs(1);
 
 pub(crate) async fn transmit_request<T>(
     transport: &mut T,
