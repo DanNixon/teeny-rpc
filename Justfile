@@ -33,6 +33,7 @@ test:
 
 clippy:
     cargo clippy -- -D warnings
+    cargo clippy --no-default-features --features no-std -- -D warnings
 
 fmt:
     alejandra -q .

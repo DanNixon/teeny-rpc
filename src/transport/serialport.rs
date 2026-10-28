@@ -1,12 +1,13 @@
-use crate::error;
+use crate::Error;
 use core::time::Duration;
-use serde::{de::DeserializeOwned, Serialize};
+use log::error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, ReadHalf, WriteHalf};
 use tokio_serial::{SerialPortBuilderExt, SerialStream};
 
 pub struct SerialTransport {
     reader: BufReader<ReadHalf<SerialStream>>,
     writer: WriteHalf<SerialStream>,
+    rx_buf: Vec<u8>,
 }
 
 impl SerialTransport {
@@ -15,17 +16,21 @@ impl SerialTransport {
             .open_native_async()
             .map_err(|e| {
                 error!("Failed to open serial port {port} with error {e}");
-                crate::Error::TransportError
+                Error::TransportError
             })?;
 
         let (reader, writer) = tokio::io::split(port);
         let reader = BufReader::new(reader);
 
-        Ok(Self { reader, writer })
+        Ok(Self {
+            reader,
+            writer,
+            rx_buf: Vec::new(),
+        })
     }
 }
 
-impl<M: Serialize + DeserializeOwned> super::Transport<M> for SerialTransport {
+impl super::Transport for SerialTransport {
     async fn flush(&mut self, timeout: Duration) -> Result<usize, crate::Error> {
         let mut count: usize = 0;
 
@@ -35,7 +40,7 @@ impl<M: Serialize + DeserializeOwned> super::Transport<M> for SerialTransport {
                     count = count.saturating_add(1);
                 }
                 Ok(Err(_)) => {
-                    return Err(crate::Error::TransportError);
+                    return Err(Error::TransportError);
                 }
                 Err(_) => {
                     break;
@@ -46,40 +51,27 @@ impl<M: Serialize + DeserializeOwned> super::Transport<M> for SerialTransport {
         Ok(count)
     }
 
-    async fn receive_message(&mut self, timeout: Duration) -> Result<M, crate::Error> {
-        let mut buffer = Vec::new();
+    async fn receive_frame(&mut self, timeout: Duration) -> Result<&mut [u8], crate::Error> {
+        self.rx_buf.clear();
 
-        // Receive data
-        let _num_bytes =
-            match tokio::time::timeout(timeout, self.reader.read_until(b'\0', &mut buffer)).await {
-                Ok(Ok(0)) => {
-                    error!("No data received");
-                    Err(crate::Error::TransportError)
-                }
-                Ok(Ok(num_bytes)) => Ok(num_bytes),
-                Ok(Err(e)) => {
-                    error!("Serial error: {e}");
-                    Err(crate::Error::TransportError)
-                }
-                Err(_) => Err(crate::Error::Timeout),
-            }?;
-
-        // Decode message
-        postcard::from_bytes_cobs::<M>(&mut buffer).map_err(|e| {
-            error!("Deserialize error: {e}");
-            crate::Error::DeserializeError
-        })
+        match tokio::time::timeout(timeout, self.reader.read_until(b'\0', &mut self.rx_buf)).await {
+            Ok(Ok(0)) => {
+                error!("No data received");
+                Err(Error::TransportError)
+            }
+            Ok(Ok(_)) => Ok(&mut self.rx_buf),
+            Ok(Err(e)) => {
+                error!("Serial error: {e}");
+                Err(Error::TransportError)
+            }
+            Err(_) => Err(Error::Timeout),
+        }
     }
 
-    async fn transmit_message(&mut self, msg: M) -> Result<(), crate::Error> {
-        let buffer = postcard::to_stdvec_cobs(&msg).map_err(|e| {
-            error!("Serialize error: {e}");
-            crate::Error::SerializeError
-        })?;
-
-        self.writer.write_all(&buffer).await.map_err(|e| {
+    async fn transmit_frame(&mut self, frame: &[u8]) -> Result<(), crate::Error> {
+        self.writer.write_all(frame).await.map_err(|e| {
             error!("Failed to write to serial port with error {e}");
-            crate::Error::TransportError
+            Error::TransportError
         })
     }
 }

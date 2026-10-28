@@ -14,7 +14,7 @@ use panic_probe as _;
 use portable_atomic as _;
 use serde::{Deserialize, Serialize};
 use static_cell::StaticCell;
-use teeny_rpc::{server::Server, transport::embedded::EioTransport};
+use teeny_rpc::{transport::EioTransport, Server};
 
 bind_interrupts!(struct Irqs {
     UART0_IRQ  => BufferedInterruptHandler<UART0>;
@@ -46,7 +46,7 @@ async fn main(_spawner: Spawner) {
 
     let transport = EioTransport::<_, 512>::new(uart);
     let mut server =
-        Server::<_, Request, Response, 0x42>::new(transport, Duration::from_millis(100));
+        Server::<_, Request, Response, 0x42, 512>::new(transport, Duration::from_millis(100));
 
     loop {
         match server.wait_for_request(Duration::from_secs(5)).await {
