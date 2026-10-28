@@ -132,7 +132,7 @@ mod test {
         server::Server,
         test::{
             receive_request_ack, receive_response, transmit_request, transmit_response_ack,
-            Request, Response, BUF_LEN,
+            Request, Response, BUF_LEN, TEST_TIMEOUT,
         },
         transport::TokioChannelTransport,
         Error,
@@ -177,12 +177,12 @@ mod test {
                 .unwrap();
 
             assert_eq!(
-                receive_request_ack(&mut t1, Duration::ZERO).await,
+                receive_request_ack(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2))
             );
 
             assert_eq!(
-                receive_response(&mut t1, Duration::ZERO).await,
+                receive_response(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2, Response::Ping(69)))
             );
 
@@ -228,12 +228,12 @@ mod test {
                 .unwrap();
 
             assert_eq!(
-                receive_request_ack(&mut t1, Duration::ZERO).await,
+                receive_request_ack(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2))
             );
 
             assert_eq!(
-                receive_response(&mut t1, Duration::from_millis(20)).await,
+                receive_response(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2, Response::Ping(69)))
             );
 
@@ -281,12 +281,12 @@ mod test {
                 .unwrap();
 
             assert_eq!(
-                receive_request_ack(&mut t1, Duration::ZERO).await,
+                receive_request_ack(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2))
             );
 
             assert_eq!(
-                receive_response(&mut t1, Duration::from_millis(20)).await,
+                receive_response(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2, Response::Ping(69)))
             );
 
@@ -300,12 +300,12 @@ mod test {
                 .unwrap();
 
             assert_eq!(
-                receive_request_ack(&mut t1, Duration::ZERO).await,
+                receive_request_ack(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2))
             );
 
             assert_eq!(
-                receive_response(&mut t1, Duration::ZERO).await,
+                receive_response(&mut t1, TEST_TIMEOUT).await,
                 Ok((0x42, 2, Response::Ping(69)))
             );
 
